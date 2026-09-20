@@ -101,6 +101,50 @@ body.light-theme {
     gap: 12px;
 }
 
+.drive-filter-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--primary-light);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.drive-select-dropdown {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.drive-select-dropdown:focus, .drive-select-dropdown:hover {
+    border-color: var(--primary);
+}
+
+.form-input-sm {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
 .auto-scan-badge {
     display: flex;
     align-items: center;
@@ -335,7 +379,7 @@ body.light-theme {
 /* Metrics Grid */
 .metrics-grid {
     display: grid;
-    grid-template-columns: 1.5fr repeat(3, 1fr);
+    grid-template-columns: 1.8fr repeat(2, 1fr);
     gap: 20px;
 }
 
@@ -348,6 +392,55 @@ body.light-theme {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+}
+
+.storage-multi-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.drive-breakdown-item {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.drive-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.drive-breakdown-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.drive-breakdown-size {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.drive-breakdown-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 .card-header-sm {

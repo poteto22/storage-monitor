@@ -94,7 +94,7 @@ def get_detailed_folder_stats(folder_path):
             "error": str(e)
         }
 
-def run_full_scan():
+def run_full_scan(drive_id=None):
     global scan_state
     if scan_state["is_scanning"]:
         return {"status": "already_running"}
@@ -105,10 +105,19 @@ def run_full_scan():
     scan_state["last_error"] = None
     scan_state["logs"] = []
     
-    add_scan_log("เริ่มต้นการสแกนละเอียด (Detailed Precision Scan)...", "info")
+    drive_label = ""
+    if drive_id and str(drive_id).lower() != "all":
+        try:
+            d_obj = database.get_drive(int(drive_id))
+            if d_obj:
+                drive_label = f" ({d_obj['name']})"
+        except ValueError:
+            pass
+
+    add_scan_log(f"เริ่มต้นการสแกนละเอียด{drive_label} (Detailed Precision Scan)...", "info")
     
     start_time = time.time()
-    targets = database.get_targets()
+    targets = database.get_targets(drive_id)
     enabled_targets = [t for t in targets if t.get("enabled", 1) == 1]
     
     if not enabled_targets:
@@ -122,6 +131,7 @@ def run_full_scan():
     expanded_items = []
     for t in enabled_targets:
         t_path = t["path"]
+        t_drive_id = t.get("drive_id", 1)
         if os.path.exists(t_path) and os.path.isdir(t_path):
             try:
                 sub_dirs = []
@@ -132,13 +142,13 @@ def run_full_scan():
                             
                 if sub_dirs:
                     for sd in sub_dirs:
-                        expanded_items.append((t["id"], sd.name, sd.path))
+                        expanded_items.append((t["id"], sd.name, sd.path, t_drive_id))
                 else:
-                    expanded_items.append((t["id"], t["name"], t_path))
+                    expanded_items.append((t["id"], t["name"], t_path, t_drive_id))
             except Exception:
-                expanded_items.append((t["id"], t["name"], t_path))
+                expanded_items.append((t["id"], t["name"], t_path, t_drive_id))
         else:
-            expanded_items.append((t["id"], t["name"], t_path))
+            expanded_items.append((t["id"], t["name"], t_path, t_drive_id))
             
     scan_state["total_targets"] = len(expanded_items)
     add_scan_log(f"พบทั้งสิ้น {len(expanded_items)} โฟลเดอร์หลัก กำลังเริ่มสแกนและคำนวณไฟล์อย่างละเอียดทุกไฟล์...", "info")
@@ -156,10 +166,10 @@ def run_full_scan():
         }
         
         for future in as_completed(future_to_item):
-            target_id, folder_name, folder_path = future_to_item[future]
+            target_id, folder_name, folder_path, drive_id = future_to_item[future]
             try:
                 stats = future.result()
-                snapshots_to_record.append((target_id, folder_name, folder_path, stats))
+                snapshots_to_record.append((target_id, folder_name, folder_path, stats, drive_id))
                 total_bytes += stats["size_bytes"]
                 total_files += stats["file_count"]
                 
@@ -174,7 +184,7 @@ def run_full_scan():
                     "file_count": 0,
                     "subfolder_count": 0,
                     "error": str(e)
-                }))
+                }, drive_id))
                 add_scan_log(f"สแกนผิดพลาด: [{folder_name}] ({str(e)})", "error")
             
             scan_state["scanned_count"] += 1
@@ -186,7 +196,7 @@ def run_full_scan():
     scan_id = database.record_scan_run(total_bytes, total_files, "completed", duration)
     
     # Save snapshots into SQLite
-    for target_id, folder_name, folder_path, stats in snapshots_to_record:
+    for target_id, folder_name, folder_path, stats, drive_id in snapshots_to_record:
         database.record_folder_snapshot(
             scan_id=scan_id,
             target_id=target_id,
@@ -194,7 +204,8 @@ def run_full_scan():
             folder_path=folder_path,
             size_bytes=stats["size_bytes"],
             file_count=stats["file_count"],
-            subfolder_count=stats["subfolder_count"]
+            subfolder_count=stats["subfolder_count"],
+            drive_id=drive_id
         )
         
     scan_state["is_scanning"] = False

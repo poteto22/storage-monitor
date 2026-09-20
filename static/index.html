@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Apache ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=1.2">
 </head>
 <body class="light-theme">
     <!-- App Container -->
@@ -30,14 +30,20 @@
             </div>
             
             <div class="header-actions">
+                <div class="drive-filter-wrapper">
+                    <label for="driveSelectFilter" class="filter-label"><i class="fa-solid fa-server"></i> เลือก Drive หลัก:</label>
+                    <select id="driveSelectFilter" class="drive-select-dropdown">
+                        <option value="all">ทุก Drive หลัก (All Drives)</option>
+                    </select>
+                </div>
                 <div class="auto-scan-badge" id="autoScanBadge">
                     <span class="status-dot green"></span>
                     <span id="scanScheduleLabel">Daily Scan: 00:00 AM</span>
                 </div>
-                <button class="btn btn-outline" id="btnOpenConfig">
+                <button type="button" class="btn btn-outline" id="btnOpenConfig">
                     <i class="fa-solid fa-gear"></i> ตั้งค่า Network Drive
                 </button>
-                <button class="btn btn-primary" id="btnTriggerScan">
+                <button type="button" class="btn btn-primary" id="btnTriggerScan">
                     <i class="fa-solid fa-arrows-rotate" id="scanBtnIcon"></i> สแกนทันที
                 </button>
             </div>
@@ -85,36 +91,29 @@
                 <!-- Storage Gauge Card -->
                 <div class="metric-card storage-card">
                     <div class="card-header-sm">
-                        <span class="card-title">ความจุ Drive รวม</span>
+                        <span class="card-title" id="storageCardTitle">ความจุ Drive รวม</span>
                         <i class="fa-solid fa-pie-chart text-accent"></i>
                     </div>
-                    <div class="storage-display">
-                        <div class="storage-text">
-                            <h2 id="usedSizeText">0 GB</h2>
-                            <span class="storage-total" id="totalCapacityText">จาก 10.0 TB</span>
+                    
+                    <!-- Single Drive Storage Display -->
+                    <div id="storageSingleContainer">
+                        <div class="storage-display">
+                            <div class="storage-text">
+                                <h2 id="usedSizeText">0 GB</h2>
+                                <span class="storage-total" id="totalCapacityText">จาก 10.0 TB</span>
+                            </div>
+                            <div class="badge-percentage" id="usageBadge">0%</div>
                         </div>
-                        <div class="badge-percentage" id="usageBadge">0%</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="storageProgressBar" style="width: 0%;"></div>
+                        </div>
+                        <div class="storage-footer">
+                            <span id="freeSpaceText">คงเหลือ: 10.0 TB</span>
+                        </div>
                     </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" id="storageProgressBar" style="width: 0%;"></div>
-                    </div>
-                    <div class="storage-footer">
-                        <span id="freeSpaceText">คงเหลือ: 10.0 TB</span>
-                    </div>
-                </div>
 
-                <!-- Monitored Folders Card -->
-                <div class="metric-card">
-                    <div class="card-header-sm">
-                        <span class="card-title">โฟลเดอร์หลักที่ติดตาม</span>
-                        <div class="icon-circle bg-blue-light">
-                            <i class="fa-solid fa-folder-open text-blue"></i>
-                        </div>
-                    </div>
-                    <div class="metric-body">
-                        <h2 id="targetCountText">0</h2>
-                        <span class="metric-subtext">Network Shared Folders</span>
-                    </div>
+                    <!-- Multi-Drive Storage Breakdown List (Shown when filter is 'all') -->
+                    <div id="storageMultiContainer" class="storage-multi-list hidden"></div>
                 </div>
 
                 <!-- Total Files Count Card -->
@@ -191,6 +190,7 @@
                                 <tr>
                                     <th class="th-sortable" data-sort="id"># <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable" data-sort="name">ชื่อโฟลเดอร์หลัก <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="th-sortable" data-sort="drive">Drive หลัก <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable active-sort" data-sort="size">ขนาดที่ใช้ (Size) <i class="fa-solid fa-sort-down sort-icon"></i></th>
                                     <th class="th-sortable" data-sort="percent">สัดส่วน (% Drive) <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable" data-sort="files">จำนวนไฟล์ย่อยรวม <i class="fa-solid fa-sort sort-icon"></i></th>
@@ -198,7 +198,7 @@
                             </thead>
                             <tbody id="folderTableBody">
                                 <tr>
-                                    <td colspan="5" class="empty-state">
+                                    <td colspan="6" class="empty-state">
                                         <i class="fa-solid fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...
                                     </td>
                                 </tr>
@@ -218,26 +218,60 @@
                     <div class="modal-icon"><i class="fa-solid fa-sliders"></i></div>
                     <div>
                         <h2>ตั้งค่า Network Drive & Path</h2>
-                        <p class="modal-subtitle">จัดการ Path โฟลเดอร์ที่ต้องการสแกนและความจุของระบบ</p>
+                        <p class="modal-subtitle">จัดการ Drive หลัก และ Path โฟลเดอร์ที่ต้องการสแกน</p>
                     </div>
                 </div>
-                <button class="modal-close" id="btnCloseModal"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="modal-close" id="btnCloseModal"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
             <div class="modal-body">
-                <!-- Global Drive Settings Form -->
+                <!-- Main Drives Management Section -->
                 <div class="form-section">
-                    <h4 class="form-section-title"><i class="fa-solid fa-server"></i> ข้อมูล Drive หลัก</h4>
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label>ชื่อ Network Drive</label>
-                            <input type="text" id="cfgDriveName" class="form-input" placeholder="เช่น NAS Main Drive">
-                        </div>
-                        <div class="form-group">
-                            <label>ความจุทั้งหมด (Total TB)</label>
-                            <input type="number" step="0.1" id="cfgCapacityTb" class="form-input" placeholder="เช่น 10.0">
+                    <h4 class="form-section-title"><i class="fa-solid fa-server"></i> จัดการ Drive หลัก (Main Storage Drives)</h4>
+                    
+                    <!-- Add Drive Form -->
+                    <div class="add-target-card mb-3">
+                        <h5><i class="fa-solid fa-plus-circle text-accent"></i> เพิ่ม Drive หลักใหม่</h5>
+                        <div class="form-grid-3 mt-2" style="align-items: flex-end;">
+                            <div class="form-group flex-2">
+                                <label>ชื่อ Drive หลัก</label>
+                                <input type="text" id="newDriveName" class="form-input" placeholder="เช่น NAS Main Storage, Backup SAN">
+                            </div>
+                            <div class="form-group">
+                                <label>ความจุรวม (TB)</label>
+                                <input type="number" step="0.1" id="newDriveCapacity" class="form-input" placeholder="เช่น 20.0">
+                            </div>
+                            <div class="form-group">
+                                <button type="button" class="btn btn-sm btn-primary" id="btnAddDrive">
+                                    <i class="fa-solid fa-plus"></i> เพิ่ม Drive
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Drive List Table -->
+                    <div class="target-list-wrapper">
+                        <table class="target-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th>ชื่อ Drive หลัก</th>
+                                    <th style="width: 150px;">ความจุรวม (TB)</th>
+                                    <th style="width: 140px;">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driveListBody">
+                                <!-- Drive Items Rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <!-- Global Auto-Scan Schedule Settings -->
+                <div class="form-section">
+                    <h4 class="form-section-title"><i class="fa-solid fa-clock"></i> ตั้งค่าการสแกนอัตโนมัติ (Auto-Scan Schedule)</h4>
                     <div class="form-grid-2">
                         <div class="form-group">
                             <label>เวลาการรัน Auto Scan อัตโนมัติ</label>
@@ -257,8 +291,8 @@
                             </label>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-outline mt-2" id="btnSaveGlobalConfig">
-                        <i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งค่า Drive
+                    <button type="button" class="btn btn-sm btn-outline mt-2" id="btnSaveGlobalConfig">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึกเวลา Auto-Scan
                     </button>
                 </div>
 
@@ -275,17 +309,23 @@
                         <h5><i class="fa-solid fa-plus-circle text-accent"></i> เพิ่ม Network Folder ใหม่</h5>
                         <div class="form-grid-3 mt-2">
                             <div class="form-group">
-                                <input type="text" id="newTargetName" class="form-input" placeholder="ชื่อโฟลเดอร์ (เช่น Marketing Share)">
+                                <label>อยู่บน Drive หลัก</label>
+                                <select id="newTargetDriveSelect" class="form-input"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>ชื่อโฟลเดอร์</label>
+                                <input type="text" id="newTargetName" class="form-input" placeholder="เช่น Marketing Share">
                             </div>
                             <div class="form-group flex-2">
-                                <input type="text" id="newTargetPath" class="form-input" placeholder="Path (เช่น \\NAS01\Marketing หรือ /Volumes/Share)">
+                                <label>Path</label>
+                                <input type="text" id="newTargetPath" class="form-input" placeholder="เช่น \\NAS01\Marketing หรือ /Volumes/Share">
                             </div>
                         </div>
-                        <div class="target-actions-bar">
-                            <button class="btn btn-sm btn-light" id="btnTestNewPath">
+                        <div class="target-actions-bar mt-2">
+                            <button type="button" class="btn btn-sm btn-light" id="btnTestNewPath">
                                 <i class="fa-solid fa-plug-circle-check"></i> ทดสอบอ่าน Path
                             </button>
-                            <button class="btn btn-sm btn-primary" id="btnAddTarget">
+                            <button type="button" class="btn btn-sm btn-primary" id="btnAddTarget">
                                 <i class="fa-solid fa-plus"></i> เพิ่มรายการ
                             </button>
                         </div>
@@ -298,6 +338,7 @@
                             <thead>
                                 <tr>
                                     <th>ชื่อโฟลเดอร์</th>
+                                    <th>Drive หลัก</th>
                                     <th>Path</th>
                                     <th>สถานะ</th>
                                     <th style="width: 100px;">จัดการ</th>
@@ -312,11 +353,11 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-light" id="btnCloseModalFooter">ปิดหน้าต่าง</button>
+                <button type="button" class="btn btn-light" id="btnCloseModalFooter">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=1.2"></script>
 </body>
 </html>
