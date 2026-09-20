@@ -1,28 +1,34 @@
 # 🖥️ Network Drive Folder Size Monitor
 
-ระบบเว็บแอปพลิเคชันสำหรับ **ติดตาม, สแกนขนาดพื้นที่ (Folder Size), และนับจำนวนไฟล์ย่อยย้อนหลังบน Network Drive** (เช่น SMB/CIFS, NFS, NAS) พร้อมหน้าแดชบอร์ดสไตล์ **Modern Light Mode** ที่แสดงผล Treemap, กราฟแนวโน้มความจุ, ตารางเรียงลำดับข้อมูล, และระบบสตรีมมิ่ง Live Scan Console Log แบบ Real-time
+ระบบเว็บแอปพลิเคชันสำหรับ **ติดตาม, สแกนขนาดพื้นที่ (Folder Size), และนับจำนวนไฟล์ย่อยย้อนหลังบน Network Drive หลายลูกพร้อมกัน** (เช่น SMB/CIFS, NFS, NAS) พร้อมหน้าแดชบอร์ดสไตล์ **Modern Light Mode** ที่แสดงผล Treemap, กราฟแนวโน้มความจุ, ตารางเรียงลำดับข้อมูล, การจำแนกความจุแยกตาม Drive, และระบบสตรีมมิ่ง Live Scan Console Log แบบ Real-time
 
 ---
 
 ## 🌟 ฟีเจอร์หลัก (Key Features)
 
-1. **Dashboard สไตล์ Modern Light Mode:**
-   * **Metric Cards:** สรุปความจุรวม (Used vs Total Capacity TB), สรุปโฟลเดอร์ที่ใหญ่ที่สุด, และจำนวนไฟล์ย่อยรวมทั้งหมด
-   * **Treemap Chart (Apache ECharts):** แสดงสัดส่วนขนาดพื้นที่ของแต่ละโฟลเดอร์หลักบน Network Drive
-   * **Storage Trend Line Chart:** บันทึกและแสดงกราฟแนวโน้มการใช้งานพื้นที่ย้อนหลัง
-   * **Interactive Folder Table:** ตารางรายละเอียดโฟลเดอร์พร้อมเปอร์เซ็นต์ % และรองรับการกดหัวคอลัมน์เพื่อเรียงลำดับ (Sorting) ตามชื่อ, ขนาด, หรือจำนวนไฟล์
+1. **รองรับหลาย Drive หลัก (Multi Main Drives Support):**
+   * บันทึกและจัดการ Drive หลักได้หลายลูก พร้อมตั้งชื่อ Mount Path และระบุความจุรวม (Total Capacity GB/TB) ของแต่ละ Drive แยกกัน
+   * สามารถแก้ไขชื่อและปรับเปลี่ยนความจุรวมของแต่ละ Drive หลักได้ตลอดเวลา
 
-2. **High-Performance Native OS Scanner:**
+2. **Dashboard สไตล์ Modern Light Mode & Drive Filtering:**
+   * **Drive Selector:** เลือกสลับมุมมองดูข้อมูลเฉพาะ Drive หลักที่สนใจ หรือเลือกดู **"ทั้งหมด (All Drives)"**
+   * **Multi-Drive Capacity Card:** แสดงรายละเอียดสรุปความจุรวม (Used vs Total Capacity) และ Breakdown แสดงเปอร์เซ็นต์การใช้งานแยกราย Drive เมื่อเลือกมุมมอง All Drives
+   * **Treemap Chart (Apache ECharts):** แสดงสัดส่วนขนาดพื้นที่ของโฟลเดอร์ย่อยใน Drive หลักที่เลือก
+   * **Storage Trend Line Chart:** บันทึกและแสดงกราฟแนวโน้มการใช้งานพื้นที่ย้อนหลัง
+   * **Interactive Folder Table:** ตารางรายละเอียดโฟลเดอร์พร้อมเปอร์เซ็นต์ % และการระบุสังกัด Drive หลัก รองรับการกดหัวคอลัมน์เพื่อเรียงลำดับ (Sorting) ตามชื่อ, ขนาด, หรือจำนวนไฟล์
+
+3. **High-Performance Native OS Scanner & Drive-Scoped Scanning:**
    * สแกนขนาดพื้นที่แบบ Ultra-fast ผ่านคำสั่ง OS Disk Usage (`du -sk`) ร่วมกับ Multi-threaded Parallel Execution
    * นับจำนวนไฟล์ย่อยลึกลงไปทุกชั้น (Deep Recursive File Counting)
+   * รองรับการสั่ง **"สแกนทันที" เฉพาะ Drive หลักที่เลือก** หรือสแกนทุก Drive โดยรักษาประวัติ Snapshot ของ Drive อื่นๆ ไว้ครบถ้วน
 
-3. **Live Scan Progress & Terminal Console Panel:**
-   * สตรีมมิ่ง Log การสแกนแต่ละโฟลเดอร์ขึ้นหน้าเว็บแบบ Real-time พร้อม Progress Bar แจ้งสถานะแบบเปอร์เซ็นต์
+4. **Live Scan Progress & Terminal Console Panel:**
+   * สตรีมมิ่ง Log การสแกนแต่ละโฟลเดอร์ขึ้นหน้าเว็บแบบ Real-time (Server-Sent Events) พร้อม Progress Bar แจ้งสถานะเปอร์เซ็นต์
 
-4. **Web Configuration Management:**
-   * เพิ่ม/แก้ไข/ลบ Network Target Path ได้ผ่านหน้าเว็บ
-   * มีระบบ **"ทดสอบอ่าน Path" (Test Connection)** ตรวจสอบสิทธิ์ก่อนบันทึกจริง
-   * ปรับตั้งค่าความจุ Drive รวม (Total Capacity TB) และเวลา Auto-Scan รายวันอัตโนมัติ
+5. **Web Configuration Management:**
+   * เพิ่ม/แก้ไข/ลบ Drive หลัก และกำหนดโฟลเดอร์ย่อย (Target Folders) ที่ต้องการติดตาม
+   * ระบบ **"ทดสอบอ่าน Path" (Test Connection)** ตรวจสอบสิทธิ์และสถิติโฟลเดอร์ก่อนบันทึกจริง
+   * ตั้งเวลา Auto-Scan รายวันอัตโนมัติ
 
 ---
 
@@ -31,15 +37,15 @@
 ```text
 CG-Share Detail/
 ├── main.py              # FastAPI Web Server & REST API Endpoints
-├── scanner.py           # ตัวสแกนความเร็วสูง (Native OS Scanner & Live Console Log)
-├── database.py          # ตัวจัดการ SQLite Database (monitor.db)
+├── scanner.py           # ตัวสแกนความเร็วสูง (Native OS Scanner, Parallel Execution & SSE Log)
+├── database.py          # ตัวจัดการ SQLite Database (monitor.db) & SQLite Schema Migrations
 ├── scheduler.py         # ตัวตั้งเวลารันสแกนรายวันอัตโนมัติ (APScheduler)
 ├── requirements.txt     # รายการ Python Dependencies
-├── monitor.db           # ไฟล์ฐานข้อมูล SQLite (สร้างอัตโนมัติ)
+├── monitor.db           # ไฟล์ฐานข้อมูล SQLite (สร้างและอัปเดตอัตโนมัติ)
 ├── static/              # ไฟล์ Frontend Web Dashboard
 │   ├── index.html       # หน้า HTML Dashboard & Modals
-│   ├── styles.css       # Stylesheet ธีม Light Mode
-│   └── app.js           # JavaScript ควบคุมการทำงาน ECharts & REST APIs
+│   ├── styles.css       # Stylesheet ธีม Light Mode สไตล์ Modern
+│   └── app.js           # JavaScript ควบคุมการทำงาน ECharts, Filter & REST APIs
 └── README.md            # คู่มือการใช้งานและการติดตั้ง
 ```
 
@@ -79,7 +85,7 @@ python3 -m venv venv
 คัดลอกไฟล์ทั้งหมด (ยกเว้นโฟลเดอร์ `venv/` และ `monitor.db` เก่าหากต้องการเริ่มใหม่) ไปยังเครื่อง Production:
 
 ```bash
-# ตัวอย่างการใช้ rsync หรือ scp ย้ายไฟล์ไปยังเครื่อง Server
+# ตัวอย่างการใช้ rsync ย้ายไฟล์ไปยังเครื่อง Server
 rsync -avz --exclude 'venv' --exclude 'monitor.db' ./ user@production-server:/opt/drive-monitor/
 ```
 
@@ -88,13 +94,13 @@ rsync -avz --exclude 'venv' --exclude 'monitor.db' ./ user@production-server:/op
 
 * **สำหรับ Linux (SMB/CIFS Mount):**
   ```bash
-  sudo mkdir -p /mnt/network_share
-  sudo mount -t cifs -o username=domain_user,password=your_password //192.168.1.100/ShareName /mnt/network_share
+  sudo mkdir -p /mnt/share19
+  sudo mount -t cifs -o username=domain_user,password=your_password //192.168.1.100/CG-Share19 /mnt/share19
   ```
   *(แนะนำให้เพิ่มใน `/etc/fstab` เพื่อให้ Auto-mount ทุกครั้งที่รีสตาร์ทเครื่อง)*
 
 * **สำหรับ macOS Server:**
-  Network Drive มักจะอยู่ที่ `/Volumes/ShareName/`
+  Network Drive มักจะอยู่ที่ `/Volumes/CG-Share19/`, `/Volumes/CG-Share20/` เป็นต้น
 
 ---
 
@@ -162,9 +168,8 @@ pm2 startup
 
 #### 🔹 ทางเลือกที่ 3: Deploy ด้วย Docker Compose
 
-หากต้องการรันด้วย Docker ให้สร้างไฟล์ `Dockerfile` และ `docker-compose.yml` ในโฟลเดอร์โปรเจกต์:
+หากต้องการรันด้วย Docker ให้สร้างไฟล์ `docker-compose.yml` ในโฟลเดอร์โปรเจกต์:
 
-**`docker-compose.yml`**:
 ```yaml
 version: '3.8'
 
@@ -177,6 +182,7 @@ services:
     volumes:
       - ./monitor.db:/app/monitor.db
       - /Volumes/CG-Share19:/mnt/share19:ro  # Mount Network Drive แบบ Read-Only
+      - /Volumes/CG-Share20:/mnt/share20:ro
     restart: always
 ```
 
@@ -187,11 +193,32 @@ docker-compose up -d
 
 ---
 
-## ⚙️ 3. การตั้งค่าหลังย้ายไป Production
+## 🔌 4. รายการ REST API (REST API Endpoints)
+
+| Method | Endpoint | คำอธิบาย |
+| :--- | :--- | :--- |
+| `GET` | `/api/dashboard?drive_id=all\|ID` | ดึงข้อมูลสรุปแดชบอร์ด (Metric Cards, Treemap, Trend, Folder Table) ตาม Filter Drive |
+| `GET` | `/api/drives` | ดึงรายการ Drive หลักทั้งหมด |
+| `POST` | `/api/drives` | เพิ่ม Drive หลักใหม่ (`name`, `mount_path`, `total_capacity_tb`) |
+| `PUT` | `/api/drives/{id}` | แก้ไขชื่อ หรือความจุรวมของ Drive หลัก |
+| `DELETE` | `/api/drives/{id}` | ลบ Drive หลักและข้อมูล Target ภายใน Drive |
+| `GET` | `/api/targets` | ดึงรายการโฟลเดอร์ย่อยที่ติดตามทั้งหมด |
+| `POST` | `/api/targets` | เพิ่มโฟลเดอร์ย่อยที่ติดตาม (`folder_path`, `drive_id`) |
+| `DELETE` | `/api/targets/{id}` | ลบโฟลเดอร์ย่อยออกจากรายการติดตาม |
+| `POST` | `/api/test-path` | ทดสอบการเข้าถึงโฟลเดอร์ Network Path |
+| `POST` | `/api/scan/trigger?drive_id=all\|ID` | สั่งเริ่มสแกนโฟลเดอร์ทันที (เฉพาะ Drive ที่เลือก หรือทั้งหมด) |
+| `GET` | `/api/scan-stream` | SSE Endpoint สำหรับรับ Live Scan Console Logs แบบ Real-time |
+| `GET` | `/api/settings` | ดึงข้อมูลการตั้งค่าระบบ (เช่น เวลา Auto-Scan) |
+| `POST` | `/api/settings` | บันทึกการตั้งค่าระบบ |
+
+---
+
+## ⚙️ 5. การตั้งค่าหลังย้ายไป Production
 
 1. เข้าหน้าเว็บผ่าน IP ของเครื่อง Production: **`http://<PRODUCTION_SERVER_IP>:8000`**
 2. กดปุ่ม **"ตั้งค่า Network Drive"**:
-   * ปรับตั้งค่า **ชื่อ Drive** และ **ความจุรวม (Total Capacity TB)** บนเครื่อง Production
-   * ระบุ Path ของ Network Drive (เช่น `/mnt/network_share` หรือ `/Volumes/ShareName`)
+   * ปรับตั้งค่า **ชื่อ Drive** และ **ความจุรวม (Total Capacity TB)** ของแต่ละ Drive หลัก
+   * ระบุ Path ของ Network Drive (เช่น `/mnt/share19` หรือ `/Volumes/CG-Share19`)
    * กดปุ่ม **"ทดสอบอ่าน Path"** เพื่อยืนยันว่าระบบเข้าถึงโฟลเดอร์ได้
-3. กดปุ่ม **"สแกนทันที"** เพื่อทำการสร้าง Baseline Index ข้อมูลครั้งแรก
+3. เพิ่มโฟลเดอร์หลักที่ต้องการติดตามสำหรับแต่ละ Drive
+4. กดปุ่ม **"สแกนทันที"** เพื่อทำการสร้าง Baseline Index ข้อมูลครั้งแรก
