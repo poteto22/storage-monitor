@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Drive Folder Size Monitor</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="light-theme">
+    <!-- App Container -->
+    <div class="app-layout">
+        <!-- Top Navigation Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-hard-drive"></i>
+                </div>
+                <div class="brand-info">
+                    <h1 id="driveNameHeader">NAS Network Drive Monitor</h1>
+                    <span class="sub-text" id="lastScanText"><i class="fa-regular fa-clock"></i> ยังไม่มีข้อมูลสแกน</span>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="auto-scan-badge" id="autoScanBadge">
+                    <span class="status-dot green"></span>
+                    <span id="scanScheduleLabel">Daily Scan: 00:00 AM</span>
+                </div>
+                <button class="btn btn-outline" id="btnOpenConfig">
+                    <i class="fa-solid fa-gear"></i> ตั้งค่า Network Drive
+                </button>
+                <button class="btn btn-primary" id="btnTriggerScan">
+                    <i class="fa-solid fa-arrows-rotate" id="scanBtnIcon"></i> สแกนทันที
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Alert Toast Container -->
+            <div id="toastContainer" class="toast-container"></div>
+
+            <!-- Live Scan Progress & Console Log Panel (Hidden by default, shown during scan) -->
+            <section class="progress-panel hidden" id="scanProgressPanel">
+                <div class="progress-card">
+                    <div class="progress-header">
+                        <div class="progress-title-group">
+                            <i class="fa-solid fa-sync fa-spin text-accent" id="progressSpinner"></i>
+                            <div>
+                                <h3 id="progressTitle">กำลังสแกน Network Drive...</h3>
+                                <p class="progress-subtext" id="progressSubtext">กำลังวิเคราะห์ขนาดและนับจำนวนไฟล์ย่อยทั้งหมด</p>
+                            </div>
+                        </div>
+                        <div class="progress-status-badge" id="progressPctBadge">0%</div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-bar-container large">
+                        <div class="progress-bar-fill animated" id="liveProgressBar" style="width: 0%;"></div>
+                    </div>
+
+                    <!-- Live Terminal Console Log Container -->
+                    <div class="terminal-console-wrapper">
+                        <div class="terminal-header">
+                            <span><i class="fa-solid fa-terminal"></i> Live Scan Console Log</span>
+                            <span class="terminal-dots"><span></span><span></span><span></span></span>
+                        </div>
+                        <div class="terminal-body" id="terminalConsoleBody">
+                            <div class="console-line info">[00:00:00] พร้อมเริ่มสแกน...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Summary Cards Grid -->
+            <section class="metrics-grid">
+                <!-- Storage Gauge Card -->
+                <div class="metric-card storage-card">
+                    <div class="card-header-sm">
+                        <span class="card-title">ความจุ Drive รวม</span>
+                        <i class="fa-solid fa-pie-chart text-accent"></i>
+                    </div>
+                    <div class="storage-display">
+                        <div class="storage-text">
+                            <h2 id="usedSizeText">0 GB</h2>
+                            <span class="storage-total" id="totalCapacityText">จาก 10.0 TB</span>
+                        </div>
+                        <div class="badge-percentage" id="usageBadge">0%</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="storageProgressBar" style="width: 0%;"></div>
+                    </div>
+                    <div class="storage-footer">
+                        <span id="freeSpaceText">คงเหลือ: 10.0 TB</span>
+                    </div>
+                </div>
+
+                <!-- Monitored Folders Card -->
+                <div class="metric-card">
+                    <div class="card-header-sm">
+                        <span class="card-title">โฟลเดอร์หลักที่ติดตาม</span>
+                        <div class="icon-circle bg-blue-light">
+                            <i class="fa-solid fa-folder-open text-blue"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <h2 id="targetCountText">0</h2>
+                        <span class="metric-subtext">Network Shared Folders</span>
+                    </div>
+                </div>
+
+                <!-- Total Files Count Card -->
+                <div class="metric-card">
+                    <div class="card-header-sm">
+                        <span class="card-title">จำนวนไฟล์ย่อยทั้งหมด (ทุกชั้น)</span>
+                        <div class="icon-circle bg-indigo-light">
+                            <i class="fa-solid fa-file-lines text-indigo"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <h2 id="totalFilesText">0</h2>
+                        <span class="metric-subtext">Recursive Files Indexed</span>
+                    </div>
+                </div>
+
+                <!-- 24h Growth Card -->
+                <div class="metric-card">
+                    <div class="card-header-sm">
+                        <span class="card-title">อัตราเติบโต 24h</span>
+                        <div class="icon-circle bg-emerald-light">
+                            <i class="fa-solid fa-chart-line text-emerald"></i>
+                        </div>
+                    </div>
+                    <div class="metric-body">
+                        <h2 id="growth24hText" class="text-emerald">+0 MB</h2>
+                        <span class="metric-subtext">การเปลี่ยนแปลงจากสแกนล่าสุด</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section (Treemap & Trend) -->
+            <section class="charts-section">
+                <div class="chart-card flex-2">
+                    <div class="card-header">
+                        <div>
+                            <h3><i class="fa-solid fa-border-all text-accent"></i> สัดส่วนขนาดโฟลเดอร์หลัก (Treemap)</h3>
+                            <p class="subtitle">สัดส่วนพื้นที่ของแต่ละโฟลเดอร์บน Network Drive</p>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="treemapChart"></div>
+                </div>
+
+                <div class="chart-card flex-1">
+                    <div class="card-header">
+                        <div>
+                            <h3><i class="fa-solid fa-chart-area text-indigo"></i> แนวโน้มความจุย้อนหลัง</h3>
+                            <p class="subtitle">ประวัติการใช้พื้นที่ย้อนหลัง (Storage Trend)</p>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="trendChart"></div>
+                </div>
+            </section>
+
+            <!-- Folder Breakdown Table Section -->
+            <section class="table-section">
+                <div class="table-card">
+                    <div class="table-header-bar">
+                        <div class="table-title">
+                            <h3><i class="fa-solid fa-list-check text-blue"></i> รายละเอียดโฟลเดอร์หลักทั้งหมด</h3>
+                            <span class="badge-count" id="tableCountBadge">0 โฟลเดอร์</span>
+                        </div>
+                        <div class="table-actions">
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="searchInput" placeholder="ค้นหาชื่อโฟลเดอร์...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-sortable" data-sort="id"># <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="th-sortable" data-sort="name">ชื่อโฟลเดอร์หลัก <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="th-sortable active-sort" data-sort="size">ขนาดที่ใช้ (Size) <i class="fa-solid fa-sort-down sort-icon"></i></th>
+                                    <th class="th-sortable" data-sort="percent">สัดส่วน (% Drive) <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="th-sortable" data-sort="files">จำนวนไฟล์ย่อยรวม <i class="fa-solid fa-sort sort-icon"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="folderTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Network Drive Settings Modal -->
+    <div class="modal-backdrop" id="configModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-icon"><i class="fa-solid fa-sliders"></i></div>
+                    <div>
+                        <h2>ตั้งค่า Network Drive & Path</h2>
+                        <p class="modal-subtitle">จัดการ Path โฟลเดอร์ที่ต้องการสแกนและความจุของระบบ</p>
+                    </div>
+                </div>
+                <button class="modal-close" id="btnCloseModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Global Drive Settings Form -->
+                <div class="form-section">
+                    <h4 class="form-section-title"><i class="fa-solid fa-server"></i> ข้อมูล Drive หลัก</h4>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>ชื่อ Network Drive</label>
+                            <input type="text" id="cfgDriveName" class="form-input" placeholder="เช่น NAS Main Drive">
+                        </div>
+                        <div class="form-group">
+                            <label>ความจุทั้งหมด (Total TB)</label>
+                            <input type="number" step="0.1" id="cfgCapacityTb" class="form-input" placeholder="เช่น 10.0">
+                        </div>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label>เวลาการรัน Auto Scan อัตโนมัติ</label>
+                            <select id="cfgCronHour" class="form-input">
+                                <option value="0">00:00 (เที่ยงคืน)</option>
+                                <option value="1">01:00 น.</option>
+                                <option value="2">02:00 น.</option>
+                                <option value="3">03:00 น.</option>
+                                <option value="6">06:00 น.</option>
+                                <option value="12">12:00 น.</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-align-end">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="cfgAutoEnabled" checked>
+                                <span>เปิดใช้งาน Auto-Scan รายวัน</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline mt-2" id="btnSaveGlobalConfig">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งค่า Drive
+                    </button>
+                </div>
+
+                <hr class="divider">
+
+                <!-- Monitored Path Management Section -->
+                <div class="form-section">
+                    <div class="section-header-flex">
+                        <h4 class="form-section-title"><i class="fa-solid fa-folder-tree"></i> รายการ Network Path ที่ติดตาม</h4>
+                    </div>
+
+                    <!-- Add New Target Box -->
+                    <div class="add-target-card">
+                        <h5><i class="fa-solid fa-plus-circle text-accent"></i> เพิ่ม Network Folder ใหม่</h5>
+                        <div class="form-grid-3 mt-2">
+                            <div class="form-group">
+                                <input type="text" id="newTargetName" class="form-input" placeholder="ชื่อโฟลเดอร์ (เช่น Marketing Share)">
+                            </div>
+                            <div class="form-group flex-2">
+                                <input type="text" id="newTargetPath" class="form-input" placeholder="Path (เช่น \\NAS01\Marketing หรือ /Volumes/Share)">
+                            </div>
+                        </div>
+                        <div class="target-actions-bar">
+                            <button class="btn btn-sm btn-light" id="btnTestNewPath">
+                                <i class="fa-solid fa-plug-circle-check"></i> ทดสอบอ่าน Path
+                            </button>
+                            <button class="btn btn-sm btn-primary" id="btnAddTarget">
+                                <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+                            </button>
+                        </div>
+                        <div id="testPathResult" class="test-result-box hidden"></div>
+                    </div>
+
+                    <!-- Target List Table -->
+                    <div class="target-list-wrapper mt-3">
+                        <table class="target-table">
+                            <thead>
+                                <tr>
+                                    <th>ชื่อโฟลเดอร์</th>
+                                    <th>Path</th>
+                                    <th>สถานะ</th>
+                                    <th style="width: 100px;">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="targetListBody">
+                                <!-- Target Items Rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-light" id="btnCloseModalFooter">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
