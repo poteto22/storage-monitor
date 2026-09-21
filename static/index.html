@@ -192,13 +192,15 @@
                                     <th class="th-sortable" data-sort="name">ชื่อโฟลเดอร์หลัก <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable" data-sort="drive">Drive หลัก <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable active-sort" data-sort="size">ขนาดที่ใช้ (Size) <i class="fa-solid fa-sort-down sort-icon"></i></th>
+                                    <th class="th-sortable" data-sort="delta">การเปลี่ยนแปลง <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable" data-sort="percent">สัดส่วน (% Drive) <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="th-sortable" data-sort="files">จำนวนไฟล์ย่อยรวม <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th style="width: 110px;">ประวัติ</th>
                                 </tr>
                             </thead>
                             <tbody id="folderTableBody">
                                 <tr>
-                                    <td colspan="6" class="empty-state">
+                                    <td colspan="8" class="empty-state">
                                         <i class="fa-solid fa-spinner fa-spin"></i> กำลังโหลดข้อมูล...
                                     </td>
                                 </tr>
@@ -358,6 +360,79 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=1.2"></script>
+    <!-- Per-Folder History & Trend Detail Modal -->
+    <div class="modal-backdrop" id="folderHistoryModal">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-icon text-indigo"><i class="fa-solid fa-chart-line"></i></div>
+                    <div>
+                        <h2 id="fhModalTitle">ประวัติการใช้พื้นที่โฟลเดอร์</h2>
+                        <p class="modal-subtitle" id="fhModalSubtitle">path/to/folder</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseFhModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Folder Quick Metrics Bar -->
+                <div class="fh-metrics-grid">
+                    <div class="fh-metric-card">
+                        <span class="fh-metric-label"><i class="fa-solid fa-database text-blue"></i> ขนาดปัจจุบัน</span>
+                        <h3 id="fhCurrentSize">0 B</h3>
+                    </div>
+                    <div class="fh-metric-card">
+                        <span class="fh-metric-label"><i class="fa-solid fa-file-lines text-indigo"></i> จำนวนไฟล์ย่อย</span>
+                        <h3 id="fhTotalFiles">0 ไฟล์</h3>
+                    </div>
+                    <div class="fh-metric-card">
+                        <span class="fh-metric-label"><i class="fa-solid fa-folder-tree text-accent"></i> โฟลเดอร์ย่อย</span>
+                        <h3 id="fhSubfolders">0 โฟลเดอร์</h3>
+                    </div>
+                    <div class="fh-metric-card">
+                        <span class="fh-metric-label"><i class="fa-solid fa-clock-rotate-left text-emerald"></i> บันทึกสแกนทั้งหมด</span>
+                        <h3 id="fhHistoryCount">0 รอบ</h3>
+                    </div>
+                </div>
+
+                <!-- Folder Trend EChart -->
+                <div class="form-section mt-3">
+                    <h4 class="form-section-title"><i class="fa-solid fa-chart-area text-accent"></i> กราฟแนวโน้มขนาดย้อนหลัง (Folder Growth Trend)</h4>
+                    <div class="chart-container" id="folderHistoryChart" style="height: 250px; width: 100%;"></div>
+                </div>
+
+                <hr class="divider">
+
+                <!-- History Log Table -->
+                <div class="form-section">
+                    <h4 class="form-section-title"><i class="fa-solid fa-list-ul"></i> รายการประวัติสแกนย้อนหลัง</h4>
+                    <div class="target-list-wrapper" style="max-height: 220px; overflow-y: auto;">
+                        <table class="target-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th>วัน-เวลา สแกน</th>
+                                    <th>ขนาดที่ใช้ (Size)</th>
+                                    <th>การเปลี่ยนแปลง (Delta)</th>
+                                    <th>จำนวนไฟล์ย่อย</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fhTableBody">
+                                <tr>
+                                    <td colspan="5" class="empty-state">กำลังโหลดประวัติ...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" id="btnCloseFhModalFooter">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=1.4"></script>
 </body>
 </html>

@@ -168,6 +168,19 @@ def trigger_scan(background_tasks: BackgroundTasks, drive_id: Optional[str] = "a
 def get_scan_status():
     return scanner.get_scan_status()
 
+@app.get("/api/folders/history")
+def get_folder_history(folder_path: Optional[str] = None, folder_name: Optional[str] = None, days: Optional[int] = 30):
+    if not folder_path and not folder_name:
+        raise HTTPException(status_code=400, detail="folder_path or folder_name is required")
+    history = database.get_folder_history(folder_path, folder_name, days or 30)
+    return {
+        "folder_path": folder_path,
+        "folder_name": folder_name,
+        "days": days or 30,
+        "count": len(history),
+        "history": history
+    }
+
 @app.get("/api/configs")
 def get_configs():
     return database.get_configs()

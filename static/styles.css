@@ -1012,3 +1012,101 @@ body.light-theme {
         flex-direction: column;
     }
 }
+
+/* Per-Folder History Modal & Delta Badges */
+.modal-dialog.modal-lg {
+    max-width: 900px;
+}
+
+.fh-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.fh-metric-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fh-metric-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fh-metric-card h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.delta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.delta-badge.positive {
+    background-color: var(--emerald-light);
+    color: var(--emerald);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.delta-badge.negative {
+    background-color: var(--rose-light);
+    color: var(--rose);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.delta-badge.neutral {
+    background-color: var(--bg-secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.folder-link {
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: color 0.15s ease;
+}
+
+.folder-link:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.btn-history-icon {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    background-color: var(--indigo-light);
+    color: var(--indigo);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-history-icon:hover {
+    background-color: var(--indigo);
+    color: #ffffff;
+}
+

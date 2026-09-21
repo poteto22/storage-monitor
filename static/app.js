@@ -2,7 +2,8 @@
 let dashboardData = null;
 let treemapChartInstance = null;
 let trendChartInstance = null;
-let currentSortField = 'size'; // 'id', 'name', 'drive', 'size', 'percent', 'files'
+let folderHistoryChartInstance = null;
+let currentSortField = 'size'; // 'id', 'name', 'drive', 'size', 'percent', 'files', 'delta'
 let currentSortOrder = 'desc';
 let currentSelectedDriveId = 'all';
 
@@ -49,6 +50,7 @@ function initCharts() {
     }
     const treemapEl = document.getElementById('treemapChart');
     const trendEl = document.getElementById('trendChart');
+    const folderHistEl = document.getElementById('folderHistoryChart');
     
     if (treemapEl && !treemapChartInstance) {
         try { treemapChartInstance = echarts.init(treemapEl); } catch(e) {}
@@ -56,10 +58,14 @@ function initCharts() {
     if (trendEl && !trendChartInstance) {
         try { trendChartInstance = echarts.init(trendEl); } catch(e) {}
     }
+    if (folderHistEl && !folderHistoryChartInstance) {
+        try { folderHistoryChartInstance = echarts.init(folderHistEl); } catch(e) {}
+    }
     
     window.addEventListener('resize', () => {
         if (treemapChartInstance) treemapChartInstance.resize();
         if (trendChartInstance) trendChartInstance.resize();
+        if (folderHistoryChartInstance) folderHistoryChartInstance.resize();
     });
 }
 
@@ -298,7 +304,14 @@ function renderTrendChart(history) {
         return;
     }
     
-    const dates = history.map(h => (h.scan_time || '').split(' ')[0]);
+    const dates = history.map(h => {
+        const full = h.scan_time || '';
+        const parts = full.split(' ');
+        if (parts.length >= 2) {
+            return `${parts[0].substring(5)} ${parts[1].substring(0, 5)}`;
+        }
+        return full;
+    });
     const valuesGB = history.map(h => (h.total_bytes / (1024 ** 3)).toFixed(2));
     
     const option = {
@@ -338,6 +351,16 @@ function renderTrendChart(history) {
     trendChartInstance.setOption(option, true);
 }
 
+function renderDeltaBadge(changeBytes, changePercent) {
+    if (changeBytes > 0) {
+        return `<span class="delta-badge positive" title="เพิ่มขึ้น ${formatBytes(changeBytes)}"><i class="fa-solid fa-caret-up"></i> +${formatBytes(changeBytes)} (+${changePercent}%)</span>`;
+    } else if (changeBytes < 0) {
+        return `<span class="delta-badge negative" title="ลดลง ${formatBytes(Math.abs(changeBytes))}"><i class="fa-solid fa-caret-down"></i> ${formatBytes(changeBytes)} (${changePercent}%)</span>`;
+    } else {
+        return `<span class="delta-badge neutral"><i class="fa-solid fa-minus"></i> 0 B (0%)</span>`;
+    }
+}
+
 function getSortedSnapshots(snapshots) {
     if (!snapshots || snapshots.length === 0) return [];
     
@@ -356,6 +379,9 @@ function getSortedSnapshots(snapshots) {
             return currentSortOrder === 'asc' 
                 ? valA.localeCompare(valB, 'th') 
                 : valB.localeCompare(valA, 'th');
+        } else if (currentSortField === 'delta') {
+            valA = a.change_bytes || 0;
+            valB = b.change_bytes || 0;
         } else if (currentSortField === 'files') {
             valA = a.file_count || 0;
             valB = b.file_count || 0;
@@ -383,7 +409,7 @@ function renderFolderTable(snapshots) {
     if (!snapshots || snapshots.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="empty-state">
+                <td colspan="8" class="empty-state">
                     ยังไม่มีข้อมูลสแกนโฟลเดอร์ในระบบ กดปุ่ม <b>"สแกนทันที"</b> เพื่อเริ่มต้น
                 </td>
             </tr>
@@ -396,21 +422,31 @@ function renderFolderTable(snapshots) {
     
     tbody.innerHTML = sorted.map((item, index) => {
         const pct = ((item.size_bytes / totalCapacity) * 100).toFixed(2);
+        const deltaBadge = renderDeltaBadge(item.change_bytes || 0, item.change_percent || 0);
+        const encPath = encodeURIComponent(item.folder_path || '');
+        const encName = encodeURIComponent(item.folder_name || '');
+
         return `
             <tr>
                 <td><b>${index + 1}</b></td>
                 <td>
                     <div class="folder-name-cell">
                         <i class="fa-solid fa-folder folder-icon"></i>
-                        <span>${item.folder_name}</span>
+                        <span class="folder-link" data-path="${encPath}" data-name="${encName}" title="ดูประวัติย้อนหลัง">${item.folder_name}</span>
                     </div>
                 </td>
                 <td><span class="path-code"><i class="fa-solid fa-hard-drive"></i> ${item.drive_name || 'NAS Storage'}</span></td>
                 <td><b>${formatBytes(item.size_bytes)}</b></td>
+                <td>${deltaBadge}</td>
                 <td>
                     <span class="badge-percentage">${pct}%</span>
                 </td>
                 <td><b>${(item.file_count || 0).toLocaleString()}</b> ไฟล์</td>
+                <td>
+                    <button type="button" class="btn-history-icon" data-path="${encPath}" data-name="${encName}" title="ดูประวัติการเติบโต">
+                        <i class="fa-solid fa-chart-line"></i> ประวัติ
+                    </button>
+                </td>
             </tr>
         `;
     }).join('');
@@ -556,6 +592,17 @@ function setupEventListeners() {
         btnCloseModalFooter.addEventListener('click', () => modal.classList.remove('active'));
     }
     
+    // Folder History Modal Open / Close
+    const fhModal = document.getElementById('folderHistoryModal');
+    const btnCloseFhModal = document.getElementById('btnCloseFhModal');
+    const btnCloseFhModalFooter = document.getElementById('btnCloseFhModalFooter');
+    if (btnCloseFhModal && fhModal) {
+        btnCloseFhModal.addEventListener('click', () => fhModal.classList.remove('active'));
+    }
+    if (btnCloseFhModalFooter && fhModal) {
+        btnCloseFhModalFooter.addEventListener('click', () => fhModal.classList.remove('active'));
+    }
+    
     // Trigger Manual Scan
     const btnTriggerScan = document.getElementById('btnTriggerScan');
     if (btnTriggerScan) {
@@ -596,6 +643,23 @@ function setupEventListeners() {
                 s.folder_name.toLowerCase().includes(query) || (s.drive_name && s.drive_name.toLowerCase().includes(query))
             );
             renderFolderTable(filtered);
+        });
+    }
+
+    // Folder History Modal Trigger via Event Delegation on Folder Table Body
+    const folderTableBody = document.getElementById('folderTableBody');
+    if (folderTableBody) {
+        folderTableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('.folder-link, .btn-history-icon');
+            if (target) {
+                const encPath = target.getAttribute('data-path');
+                const encName = target.getAttribute('data-name');
+                if (encPath) {
+                    const rawPath = decodeURIComponent(encPath);
+                    const rawName = decodeURIComponent(encName || '');
+                    openFolderHistoryModal(rawPath, rawName);
+                }
+            }
         });
     }
 }
@@ -860,3 +924,144 @@ async function deleteTargetItem(targetId) {
         showToast("ลบข้อมูลไม่สำเร็จ", "error");
     }
 }
+
+async function openFolderHistoryModal(folderPath, folderName) {
+    const modal = document.getElementById('folderHistoryModal');
+    if (!modal) return;
+    
+    const titleEl = document.getElementById('fhModalTitle');
+    const subtitleEl = document.getElementById('fhModalSubtitle');
+    if (titleEl) titleEl.innerText = `ประวัติการใช้พื้นที่: ${folderName}`;
+    if (subtitleEl) subtitleEl.innerText = folderPath;
+    
+    const tableBody = document.getElementById('fhTableBody');
+    if (tableBody) tableBody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i> กำลังดึงประวัติ...</td></tr>`;
+    
+    modal.classList.add('active');
+    
+    try {
+        const url = `/api/folders/history?folder_path=${encodeURIComponent(folderPath)}&folder_name=${encodeURIComponent(folderName)}&days=60`;
+        const response = await fetch(url);
+        const data = await response.json();
+        const historyList = data.history || [];
+        
+        if (historyList.length > 0) {
+            const latest = historyList[historyList.length - 1];
+            document.getElementById('fhCurrentSize').innerText = formatBytes(latest.size_bytes || 0);
+            document.getElementById('fhTotalFiles').innerText = `${(latest.file_count || 0).toLocaleString()} ไฟล์`;
+            document.getElementById('fhSubfolders').innerText = `${(latest.subfolder_count || 0).toLocaleString()} โฟลเดอร์`;
+            document.getElementById('fhHistoryCount').innerText = `${historyList.length} รอบ`;
+        } else {
+            document.getElementById('fhCurrentSize').innerText = '0 B';
+            document.getElementById('fhTotalFiles').innerText = '0 ไฟล์';
+            document.getElementById('fhSubfolders').innerText = '0 โฟลเดอร์';
+            document.getElementById('fhHistoryCount').innerText = '0 รอบ';
+        }
+        
+        // Render ECharts line chart for folder
+        renderFolderHistoryChart(historyList);
+        
+        // Render Table Log
+        if (tableBody) {
+            if (historyList.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="empty-state">ยังไม่มีประวัติสแกนของโฟลเดอร์นี้</td></tr>`;
+            } else {
+                tableBody.innerHTML = [...historyList].reverse().map((h, index) => {
+                    const deltaBadge = renderDeltaBadge(h.change_bytes || 0, h.change_percent || 0);
+                    return `
+                        <tr>
+                            <td><b>${historyList.length - index}</b></td>
+                            <td><i class="fa-regular fa-clock text-muted"></i> ${h.scan_time || h.run_scan_time || '-'}</td>
+                            <td><b>${formatBytes(h.size_bytes || 0)}</b></td>
+                            <td>${deltaBadge}</td>
+                            <td>${(h.file_count || 0).toLocaleString()} ไฟล์</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (e) {
+        console.error("Error loading folder history:", e);
+        showToast("ไม่สามารถดึงประวัติโฟลเดอร์ได้", "error");
+    }
+}
+
+function renderFolderHistoryChart(historyList) {
+    if (typeof echarts === 'undefined') return;
+    const chartEl = document.getElementById('folderHistoryChart');
+    if (!chartEl) return;
+    
+    if (!folderHistoryChartInstance) {
+        folderHistoryChartInstance = echarts.init(chartEl);
+    }
+    
+    if (!historyList || historyList.length === 0) {
+        folderHistoryChartInstance.setOption({
+            title: { text: 'ยังไม่มีประวัติการสแกนโฟลเดอร์นี้', left: 'center', top: 'center', textStyle: { color: '#94a3b8', fontSize: 14 } }
+        });
+        return;
+    }
+    
+    const dates = historyList.map(h => {
+        const full = h.scan_time || h.run_scan_time || '';
+        const parts = full.split(' ');
+        if (parts.length >= 2) {
+            return `${parts[0].substring(5)} ${parts[1].substring(0, 5)}`;
+        }
+        return full;
+    });
+    const valuesMB = historyList.map(h => parseFloat(( (h.size_bytes || 0) / (1024 ** 2) ).toFixed(2)));
+    
+    const option = {
+        tooltip: {
+            trigger: 'axis',
+            formatter: function(params) {
+                const item = params[0];
+                const rawObj = historyList[item.dataIndex];
+                const sizeStr = formatBytes(rawObj.size_bytes || 0);
+                const filesStr = (rawObj.file_count || 0).toLocaleString();
+                const deltaStr = rawObj.change_bytes >= 0 ? `+${formatBytes(rawObj.change_bytes)}` : formatBytes(rawObj.change_bytes);
+                return `
+                    <div style="font-weight:700; font-family: sans-serif;">${item.name}</div>
+                    <div style="font-size:12px;">ขนาด: <b>${sizeStr}</b></div>
+                    <div style="font-size:12px;">ส่วนต่าง: <b>${deltaStr}</b></div>
+                    <div style="font-size:12px;">จำนวนไฟล์: <b>${filesStr} ไฟล์</b></div>
+                `;
+            }
+        },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: dates,
+            axisLine: { lineStyle: { color: '#cbd5e1' } }
+        },
+        yAxis: {
+            type: 'value',
+            name: 'MB',
+            axisLine: { lineStyle: { color: '#cbd5e1' } },
+            splitLine: { lineStyle: { color: '#f1f5f9' } }
+        },
+        series: [{
+            name: 'Folder Size',
+            type: 'line',
+            smooth: true,
+            symbolSize: 7,
+            data: valuesMB,
+            itemStyle: { color: '#6366f1' },
+            lineStyle: { width: 3 },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
+                    { offset: 1, color: 'rgba(99, 102, 241, 0.01)' }
+                ])
+            }
+        }]
+    };
+    
+    folderHistoryChartInstance.setOption(option, true);
+    setTimeout(() => {
+        if (folderHistoryChartInstance) folderHistoryChartInstance.resize();
+    }, 150);
+}
+

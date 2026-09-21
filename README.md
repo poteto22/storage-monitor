@@ -257,6 +257,13 @@ New-NetFirewallRule -DisplayName "Drive Monitor Web UI (Port 8000)" -Direction I
    pm2 save
    ```
 
+> [!TIP]
+> **การอัปเดตโค้ดระบบ (Updating Code):**
+> หากมีการแก้ไขโค้ด Python (`main.py`, `database.py`, `scanner.py`) อย่าลืมรันคำสั่ง Restart Process ทุกครั้งเพื่อให้ Python โหลดโค้ดใหม่เข้าสู่ Memory:
+> - **สำหรับ PM2:** `pm2 restart drive-monitor` (หรือ `pm2 restart all`)
+> - **สำหรับ NSSM (Windows):** `nssm restart DriveMonitorService`
+> - **สำหรับ systemd (Linux):** `sudo systemctl restart drive-monitor`
+
 ---
 
 ## ⚙️ 3. การตั้งค่าหลังย้ายไป Production

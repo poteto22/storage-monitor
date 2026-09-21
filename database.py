@@ -257,8 +257,36 @@ def get_latest_snapshots(drive_id=None):
             ORDER BY s.size_bytes DESC
         """).fetchall()
     
+    snapshots = [dict(row) for row in rows]
+    
+    # Calculate size change compared to previous scan for each folder
+    for snap in snapshots:
+        prev_row = conn.execute("""
+            SELECT size_bytes, file_count FROM folder_snapshots
+            WHERE folder_path = ? AND id < ?
+            ORDER BY id DESC LIMIT 1
+        """, (snap["folder_path"], snap["id"])).fetchone()
+        
+        if prev_row:
+            prev_size = prev_row["size_bytes"] or 0
+            prev_files = prev_row["file_count"] or 0
+            curr_size = snap["size_bytes"] or 0
+            curr_files = snap["file_count"] or 0
+            
+            diff_bytes = curr_size - prev_size
+            diff_files = curr_files - prev_files
+            pct = round((diff_bytes / prev_size * 100), 2) if prev_size > 0 else 0.0
+            
+            snap["change_bytes"] = diff_bytes
+            snap["change_files"] = diff_files
+            snap["change_percent"] = pct
+        else:
+            snap["change_bytes"] = 0
+            snap["change_files"] = 0
+            snap["change_percent"] = 0.0
+
     conn.close()
-    return [dict(row) for row in rows]
+    return snapshots
 
 def get_growth_history(days=30, drive_id=None):
     conn = get_db()
@@ -276,11 +304,73 @@ def get_growth_history(days=30, drive_id=None):
         """, (drive_id, days)).fetchall()
     else:
         rows = conn.execute("""
-            SELECT id, scan_time, total_bytes, total_files, duration_sec
-            FROM scan_runs
-            WHERE scan_time >= datetime('now', '-' || ? || ' days')
-            ORDER BY scan_time ASC
+            SELECT r.id, r.scan_time, 
+                   COALESCE(SUM(s.size_bytes), 0) as total_bytes, 
+                   COALESCE(SUM(s.file_count), 0) as total_files, 
+                   r.duration_sec
+            FROM scan_runs r
+            JOIN folder_snapshots s ON r.id = s.scan_id
+            WHERE r.scan_time >= datetime('now', '-' || ? || ' days')
+            GROUP BY r.id, r.scan_time, r.duration_sec
+            ORDER BY r.scan_time ASC
         """, (days,)).fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def get_folder_history(folder_path: str = None, folder_name: str = None, days: int = 30):
+    conn = get_db()
+    clean_path = (folder_path or "").strip()
+    norm_path = clean_path.rstrip("/\\")
+    clean_name = (folder_name or "").strip()
+    
+    rows = conn.execute("""
+        SELECT s.*, r.scan_time as run_scan_time
+        FROM folder_snapshots s
+        LEFT JOIN scan_runs r ON s.scan_id = r.id
+        WHERE (
+            (length(?) > 0 AND (s.folder_path = ? OR s.folder_path = ? OR RTRIM(s.folder_path, '/\') = ?))
+            OR (length(?) > 0 AND s.folder_name = ?)
+        )
+        AND s.scan_time >= datetime('now', '-' || ? || ' days')
+        ORDER BY s.scan_time ASC
+    """, (clean_path, clean_path, norm_path, norm_path, clean_name, clean_name, days)).fetchall()
+    
+    # Fallback search if strict path match produced 0 items
+    if not rows and (clean_name or clean_path):
+        search_key = clean_name or os.path.basename(clean_path)
+        if search_key:
+            rows = conn.execute("""
+                SELECT s.*, r.scan_time as run_scan_time
+                FROM folder_snapshots s
+                LEFT JOIN scan_runs r ON s.scan_id = r.id
+                WHERE s.folder_name = ? OR s.folder_path LIKE ?
+                ORDER BY s.scan_time ASC
+            """, (search_key, '%' + search_key)).fetchall()
+
+    conn.close()
+    
+    result = [dict(row) for row in rows]
+    for i in range(len(result)):
+        if i == 0:
+            result[i]["change_bytes"] = 0
+            result[i]["change_files"] = 0
+            result[i]["change_percent"] = 0.0
+        else:
+            prev_size = result[i-1]["size_bytes"] or 0
+            curr_size = result[i]["size_bytes"] or 0
+            prev_files = result[i-1]["file_count"] or 0
+            curr_files = result[i]["file_count"] or 0
+            
+            diff_bytes = curr_size - prev_size
+            diff_files = curr_files - prev_files
+            pct = round((diff_bytes / prev_size * 100), 2) if prev_size > 0 else 0.0
+            
+            result[i]["change_bytes"] = diff_bytes
+            result[i]["change_files"] = diff_files
+            result[i]["change_percent"] = pct
+            
+    return result
+
+
+
 
