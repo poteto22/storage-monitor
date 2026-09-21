@@ -27,8 +27,8 @@
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
-    --font-sans: 'Plus Jakarta Sans', 'Sarabun', -apple-system, sans-serif;
-    --font-mono: 'Fira Code', monospace;
+    --font-sans: 'Plus Jakarta Sans', 'Sarabun', 'Leelawadee UI', 'Segoe UI', Tahoma, -apple-system, sans-serif;
+    --font-mono: 'Fira Code', 'Consolas', 'Courier New', monospace;
 }
 
 * {
