@@ -124,7 +124,7 @@ rsync -avz --exclude 'venv' --exclude 'monitor.db' ./ user@production-server:/op
    [Service]
    User=root
    WorkingDirectory=/opt/drive-monitor
-   ExecStart=/opt/drive-monitor/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+   ExecStart=/opt/drive-monitor/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
    Restart=always
    RestartSec=5
 
@@ -217,7 +217,7 @@ docker-compose up -d
 1. ดาวน์โหลด `nssm.exe` จาก [nssm.cc](https://nssm.cc/download) วางไว้ใน `C:\Windows\System32` (หรือโฟลเดอร์โปรเจกต์)
 2. สั่งสร้าง Service ใหม่ด้วยคำสั่ง:
    ```cmd
-   nssm install DriveMonitorService "C:\drive-monitor\venv\Scripts\uvicorn.exe" "main:app --host 0.0.0.0 --port 8000 --workers 2"
+   nssm install DriveMonitorService "C:\drive-monitor\venv\Scripts\uvicorn.exe" "main:app --host 0.0.0.0 --port 8000 --workers 1"
    ```
 3. กำหนด Working Directory ของ Service:
    ```cmd
@@ -250,7 +250,7 @@ New-NetFirewallRule -DisplayName "Drive Monitor Web UI (Port 8000)" -Direction I
 2. สั่งรัน Uvicorn ด้วย PM2:
    ```cmd
    cd C:\drive-monitor
-   pm2 start "C:\drive-monitor\venv\Scripts\uvicorn.exe" --name "drive-monitor" -- main:app --host 0.0.0.0 --port 8000 --workers 2
+   pm2 start "C:\drive-monitor\venv\Scripts\uvicorn.exe" --name "drive-monitor" -- main:app --host 0.0.0.0 --port 8000 --workers 1
    ```
 3. บันทึก Process State:
    ```cmd

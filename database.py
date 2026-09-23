@@ -195,6 +195,39 @@ def delete_target(target_id):
     conn.commit()
     conn.close()
 
+def is_scan_running():
+    conn = get_db()
+    row = conn.execute("""
+        SELECT id FROM scan_runs 
+        WHERE status = 'running' 
+        AND scan_time >= datetime('now', '-2 hours')
+        LIMIT 1
+    """).fetchone()
+    conn.close()
+    return row is not None
+
+def start_scan_run():
+    conn = get_db()
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute(
+        "INSERT INTO scan_runs (scan_time, total_bytes, total_files, status, duration_sec) VALUES (?, 0, 0, 'running', 0)",
+        (now_str,)
+    )
+    scan_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return scan_id
+
+def finish_scan_run(scan_id, total_bytes, total_files, status="completed", duration_sec=0):
+    conn = get_db()
+    conn.execute(
+        "UPDATE scan_runs SET total_bytes = ?, total_files = ?, status = ?, duration_sec = ? WHERE id = ?",
+        (total_bytes, total_files, status, duration_sec, scan_id)
+    )
+    conn.commit()
+    conn.close()
+
 def record_scan_run(total_bytes, total_files, status, duration_sec):
     conn = get_db()
     cursor = conn.cursor()

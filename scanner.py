@@ -96,7 +96,7 @@ def get_detailed_folder_stats(folder_path):
 
 def run_full_scan(drive_id=None):
     global scan_state
-    if scan_state["is_scanning"]:
+    if scan_state["is_scanning"] or database.is_scan_running():
         return {"status": "already_running"}
         
     scan_state["is_scanning"] = True
@@ -104,6 +104,8 @@ def run_full_scan(drive_id=None):
     scan_state["scanned_count"] = 0
     scan_state["last_error"] = None
     scan_state["logs"] = []
+    
+    scan_id = database.start_scan_run()
     
     drive_label = ""
     if drive_id and str(drive_id).lower() != "all":
@@ -121,7 +123,7 @@ def run_full_scan(drive_id=None):
     enabled_targets = [t for t in targets if t.get("enabled", 1) == 1]
     
     if not enabled_targets:
-        scan_id = database.record_scan_run(0, 0, "completed_empty", 0)
+        database.finish_scan_run(scan_id, 0, 0, "completed_empty", 0)
         scan_state["is_scanning"] = False
         scan_state["progress_percent"] = 100
         add_scan_log("ไม่มี Target โฟลเดอร์ที่เปิดใช้งาน", "warning")
@@ -193,7 +195,7 @@ def run_full_scan(drive_id=None):
             scan_state["current_folder"] = folder_name
 
     duration = round(time.time() - start_time, 2)
-    scan_id = database.record_scan_run(total_bytes, total_files, "completed", duration)
+    database.finish_scan_run(scan_id, total_bytes, total_files, "completed", duration)
     
     # Save snapshots into SQLite
     for target_id, folder_name, folder_path, stats, drive_id in snapshots_to_record:

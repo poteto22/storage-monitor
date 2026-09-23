@@ -11,6 +11,10 @@ __pycache__/
 *.db
 *.sqlite3
 
+# Lock files
+*.lock
+.scheduler.lock
+
 # Operating System files
 .DS_Store
 Thumbs.db
